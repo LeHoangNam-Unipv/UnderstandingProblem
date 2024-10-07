@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import os
 from sklearn.metrics import accuracy_score, precision_score, recall_score
@@ -6,27 +7,31 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 NUMB_OF_ITERATION = 20
 NUMB_TESTER = 12
 SEQUENCE_LENGTH = [450, 750, 1500, 3000]
-ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime",]
+ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime"]
 #ARCH = ["XceptionTime"]
 
-filepath = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction.csv"
-LABEL_THRESHOLD = 0.3
+filepath = r"C:\Users\lehoa\OneDrive\Desktop\New folder (4)\Tsai models\all slides\all data for both training and testing\Tsai_model_chunk_prediction_ALLSIDE_ALLDAta.csv"
+LABEL_THRESHOLD = 0.5
 analyzed_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(analysed).csv"
 accuracy_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(accuracy).csv"
 def analyze():
     df = pd.read_csv(filepath)
-    df_result = pd.DataFrame(columns=['arch', 'test_user', 'iteration', 'sequence_length','groundtruth_label', 'predicted_label', 'numberof1', 'numberof0','maxsequenceof1' ])
+    df_result = pd.DataFrame(columns=['arch', 'test_user', 'iteration', 'chunk_duration','groundtruth_label',
+                                      'predicted_label', 'numberof1', 'numberof0','maxsequenceof1', 'prediction_list'])
     for arch in ARCH:
         for i in range(NUMB_OF_ITERATION):
             for sequence in SEQUENCE_LENGTH:
+
                 for tester in range(NUMB_TESTER):
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
+                    min_numb_of_chunk = int(9300/sequence)
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence)
-                        ]
+                        ].iloc[:min_numb_of_chunk]
+
                     true_label = filtered_df['label_of_test_user'].iloc[0]
 
                     filtered_df_1 = df[
@@ -35,14 +40,14 @@ def analyze():
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence) &
                         (df['chunk_prediction'] == 1)
-                    ]
+                    ].iloc[:min_numb_of_chunk]
                     filtered_df_0 = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence) &
                         (df['chunk_prediction'] == 0)
-                        ]
+                        ].iloc[:min_numb_of_chunk]
 
                     # Count how many rows match the condition
                     count_1 = len(filtered_df_1)
@@ -55,33 +60,38 @@ def analyze():
                     result_data = {
                         'arch': arch,
                         'iteration': i,
-                        'sequence_length': sequence,
+                        'chunk_duration': sequence/150,
                         'test_user': tester,
                         'groundtruth_label': true_label,
                         'predicted_label': predicted_label,
                         'numberof1': count_1,
                         'numberof0': count_0,
-                        'maxsequenceof1': max_consecutive_one
+                        'maxsequenceof1': max_consecutive_one,
+                        'prediction_list': str(filtered_df['chunk_prediction'].tolist())
                     }
                     df_result = df_result._append(result_data, ignore_index = True)
     append_to_csv(analyzed_file,df_result)
 
 def get_average_accuracy():
     df = pd.read_csv(filepath)
-    df_result = pd.DataFrame(columns=['arch', 'iteration', 'sequence_length', 'tester_accuracy','precision','recall'])
+    df_result = pd.DataFrame(columns=['arch', 'iteration', 'chunk_duration', 'tester_accuracy', 'chunk_accuracy',
+                                      'precision','recall'])
     for arch in ARCH:
         for i in range(NUMB_OF_ITERATION):
             for sequence in SEQUENCE_LENGTH:
-                groundtruth_labels = []
-                predicted_labels = []
+                groundtruth_tester_labels = []
+                predicted_tester_labels = []
+                groundtruth_chunk_labels = []
+                predicted_chunk_labels = []
                 for tester in range(NUMB_TESTER):
+                    min_numb_of_chunk = int(9300 / sequence)
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence)
-                        ]
+                        ].iloc[:min_numb_of_chunk]
                     groundtruth_label = filtered_df['label_of_test_user'].iloc[0]
 
                     filtered_df_1 = df[
@@ -90,14 +100,14 @@ def get_average_accuracy():
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence) &
                         (df['chunk_prediction'] == 1)
-                    ]
+                    ].iloc[:min_numb_of_chunk]
                     filtered_df_0 = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence) &
                         (df['chunk_prediction'] == 0)
-                        ]
+                        ].iloc[:min_numb_of_chunk]
 
                     # Count how many rows match the condition
                     count_1 = len(filtered_df_1)
@@ -105,18 +115,25 @@ def get_average_accuracy():
 
                     predicted_label = 1 if count_1 / (count_1 + count_0) >= LABEL_THRESHOLD else 0
 
-                    groundtruth_labels.append(groundtruth_label)
-                    predicted_labels.append(predicted_label)
+                    groundtruth_tester_labels.append(groundtruth_label)
+                    predicted_tester_labels.append(predicted_label)
 
-                accuracy_by_tester = accuracy_score(groundtruth_labels, predicted_labels)
-                precision = precision_score(groundtruth_labels, predicted_labels)
-                recall = recall_score(groundtruth_labels, predicted_labels)
+                    groundtruth_chunk_labels = groundtruth_chunk_labels + filtered_df['label_of_test_user'].tolist()
+
+                    predicted_chunk_labels = predicted_chunk_labels + filtered_df['chunk_prediction'].tolist()
+
+                accuracy_by_tester = accuracy_score(groundtruth_tester_labels, predicted_tester_labels)
+                precision = precision_score(groundtruth_tester_labels, predicted_tester_labels, zero_division=0)
+                recall = recall_score(groundtruth_tester_labels, predicted_tester_labels)
+
+                accuracy_by_chunk = accuracy_score(groundtruth_chunk_labels, predicted_chunk_labels)
 
                 # Prepare data for saving
                 result_data = {
                     'arch': arch,
                     'iteration': i,
-                    'sequence_length': sequence,
+                    'chunk_duration': sequence/150,
+                    'chunk_accuracy': accuracy_by_chunk,
                     'tester_accuracy': accuracy_by_tester,
                     'precision': precision,
                     'recall': recall
@@ -164,7 +181,7 @@ def getMaximumsequenceofPositive(df):
 
 
 def main():
-    #analyze()
+    analyze()
     get_average_accuracy()
 
 
