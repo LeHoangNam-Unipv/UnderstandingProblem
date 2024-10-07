@@ -2,14 +2,16 @@ import pandas as pd
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler
 
 DATA_FOLDER = r"C:\Users\lehoa\Downloads\data-20240513T042351Z-001\data"
 LABEL_FILE =  r"C:\Users\lehoa\Downloads\data-20240513T042351Z-001\data\l_i_j.csv"
+
 TOTAL_NUMB_USER = 31
 TEST_SIZE = 0.2
 
-MIN_NUMB_ROW = None
+#MIN_NUMB_ROW = None
+MIN_NUMB_ROW = 9300
 QUESTION = [1,2,3]
 NUMB_QUESTION = len(QUESTION)
 
@@ -272,7 +274,7 @@ def data_generation(sequence_length):
 
     X_test, y_test = create_X_y_from_testing_data(labeled_chunks, test_data)
 
-    scaler = StandardScaler()
+    scaler = RobustScaler()
     # First, flatten the 3D data into 2D for scaling
     X_train_flattened = np.concatenate([chunk for chunk in X_train_balanced], axis=0)
     # Fit the scaler on the training data
