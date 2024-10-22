@@ -19,32 +19,33 @@ parent_directory = os.getcwd()
 NUMBER_OF_EPOCH = 200
 VALIDATION_SIZE = 0.2
 BATCH_SIZE = 64
-PATIENCE = 10  # Early stopping
+PATIENCE = 20  # Early stopping
 
 now = datetime.now()
 date_string = now.strftime("%d-%m-%Y-%H-%M-%S")
 
-SEQUENCE_LENGTH = [450, 750, 1500, 3000]
-
+#SEQUENCE_LENGTH = [450, 750, 1500, 3000]
+SEQUENCE_LENGTH = [750,1500]
 NUMBER_OF_IMPLEMENTATION = 20
+#NUMBER_OF_FEATURES = 10
 NUMBER_OF_FEATURES = 10
 
 def build_models():
     # Define the architectures and their hyperparameters
     archs = [
-        (FCN, {}),
-        (ResNet, {}),
+        #(FCN, {}),
+        #(ResNet, {}),
         #(xresnet1d34, {}),  # NOT ok
-        (ResCNN, {}),
+        #(ResCNN, {}),
         #(LSTM, {'n_layers':1, 'bidirectional': False, 'fc_dropout':0.2, 'rnn_dropout':0.2}), # no
         #(LSTM, {'n_layers':2, 'bidirectional': False, 'fc_dropout':0.2, 'rnn_dropout':0.2}), # no
         #(LSTM, {'c_out':2, 'n_layers':3, 'hidden_size':32, 'bidirectional': False, 'fc_dropout':0.2, 'rnn_dropout':0.2}), # no
         #(LSTM, {'n_layers':1, 'bidirectional': True, 'fc_dropout':0.2, 'rnn_dropout':0.2}), # no
         #(LSTM, {'n_layers':2, 'bidirectional': True}), # no
-        (LSTM, {'c_out':2, 'n_layers':3, 'hidden_size':32, 'bidirectional': True, 'fc_dropout':0.2, 'rnn_dropout':0.2}),
+        #(LSTM, {'c_out':2, 'n_layers':3, 'hidden_size':32, 'bidirectional': True, 'fc_dropout':0.2, 'rnn_dropout':0.2}),
         #(LSTM_FCN, {}), # Note: Long training time
         #(LSTM_FCN, {'shuffle': False}),
-        (InceptionTime, {}),
+        #(InceptionTime, {}),
         (XceptionTime, {}),
         #(OmniScaleCNN, {}), # Not useful
         #(mWDN, {'levels': 4})  # NOT ok
