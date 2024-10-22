@@ -5,12 +5,14 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 
 NUMB_OF_ITERATION = 20
-NUMB_TESTER = 12
-SEQUENCE_LENGTH = [450, 750, 1500, 3000]
-ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime"]
-#ARCH = ["XceptionTime"]
 
-filepath = r"C:\Users\lehoa\OneDrive\Desktop\New folder (4)\Tsai models\all slides\all data for both training and testing\Tsai_model_chunk_prediction_ALLSIDE_ALLDAta.csv"
+NUMB_TESTER = 12
+SEQUENCE_LENGTH = [750,1500]
+TESTING_SEQUENCE = 3000
+#ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime"]
+ARCH = ["XceptionTime"]
+
+filepath = r"C:\Users\lehoa\OneDrive\Desktop\22-10-2024-10-33-00.csv"
 LABEL_THRESHOLD = 0.5
 analyzed_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(analysed).csv"
 accuracy_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(accuracy).csv"
@@ -24,30 +26,23 @@ def analyze():
 
                 for tester in range(NUMB_TESTER):
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
-                    min_numb_of_chunk = int(9300/sequence)
+                    min_numb_of_chunk = int(9300/TESTING_SEQUENCE)
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence)
-                        ].iloc[:min_numb_of_chunk]
+                        ]
+                        #].iloc[:min_numb_of_chunk]
 
                     true_label = filtered_df['label_of_test_user'].iloc[0]
 
-                    filtered_df_1 = df[
-                        (df['arch'] == arch) &
-                        (df['test_user'] == tester) &
-                        (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence) &
-                        (df['chunk_prediction'] == 1)
-                    ].iloc[:min_numb_of_chunk]
-                    filtered_df_0 = df[
-                        (df['arch'] == arch) &
-                        (df['test_user'] == tester) &
-                        (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence) &
-                        (df['chunk_prediction'] == 0)
-                        ].iloc[:min_numb_of_chunk]
+                    filtered_df_1 = filtered_df[
+                        (filtered_df['chunk_prediction'] == 1)
+                    ]
+                    filtered_df_0 = filtered_df[
+                        (filtered_df['chunk_prediction'] == 0)
+                        ]
 
                     # Count how many rows match the condition
                     count_1 = len(filtered_df_1)
@@ -84,30 +79,25 @@ def get_average_accuracy():
                 groundtruth_chunk_labels = []
                 predicted_chunk_labels = []
                 for tester in range(NUMB_TESTER):
-                    min_numb_of_chunk = int(9300 / sequence)
+                    min_numb_of_chunk = int(9300 / TESTING_SEQUENCE)
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
                         (df['sequence_length'] == sequence)
-                        ].iloc[:min_numb_of_chunk]
+                        ]
+                        #].iloc[:min_numb_of_chunk]
+
                     groundtruth_label = filtered_df['label_of_test_user'].iloc[0]
 
-                    filtered_df_1 = df[
-                        (df['arch'] == arch) &
-                        (df['test_user'] == tester) &
-                        (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence) &
-                        (df['chunk_prediction'] == 1)
-                    ].iloc[:min_numb_of_chunk]
-                    filtered_df_0 = df[
-                        (df['arch'] == arch) &
-                        (df['test_user'] == tester) &
-                        (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence) &
-                        (df['chunk_prediction'] == 0)
-                        ].iloc[:min_numb_of_chunk]
+                    filtered_df_1 = filtered_df[
+                        (filtered_df['chunk_prediction'] == 1)
+                    ]
+
+                    filtered_df_0 = filtered_df[
+                        (filtered_df['chunk_prediction'] == 0)
+                        ]
 
                     # Count how many rows match the condition
                     count_1 = len(filtered_df_1)
