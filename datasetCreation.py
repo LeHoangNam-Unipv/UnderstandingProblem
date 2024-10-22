@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.preprocessing import StandardScaler, RobustScaler, MinMaxScaler
 
 DATA_FOLDER = r"C:\Users\lehoa\Downloads\data-20240513T042351Z-001\data"
 LABEL_FILE =  r"C:\Users\lehoa\Downloads\data-20240513T042351Z-001\data\l_i_j.csv"
@@ -11,11 +11,15 @@ TOTAL_NUMB_USER = 31
 TEST_SIZE = 0.2
 
 #MIN_NUMB_ROW = None
-MIN_NUMB_ROW = 9300
+#MIN_NUMB_ROW = 9300
+MIN_NUMB_ROW = 3000
 QUESTION = [1,2,3]
+#QUESTION = [3]
 NUMB_QUESTION = len(QUESTION)
 
-FEATURES_NAME = ["FPOGX", "FPOGY", "LPCX", "LPCY" ,"LPD", "LPS", "RPCX", "RPCY" ,"RPD", "RPS"]
+#FEATURES_NAME = ["FPOGX", "FPOGY", "LPCX", "LPCY" ,"LPD", "LPS", "RPCX", "RPCY" ,"RPD", "RPS"]
+FEATURES_NAME = [ "LPCX", "LPCY", "LPD", "LPS", "RPCX", "RPCY", "RPD", "RPS"]
+
 NUMBER_OF_FEATURES = len(FEATURES_NAME)  # Number of features
 
 def extract_valid_labels(csv_file):
@@ -69,13 +73,27 @@ def load_user_data(data_folder, sequence_length):
                 # Read the CSV file into a DataFrame
                 df = pd.read_csv(file_path, nrows=MIN_NUMB_ROW, usecols=FEATURES_NAME, dtype="float64")
 
-                fpogx = df["FPOGX"]
-                fpogx_diff = fpogx.diff().fillna(0)  # Take the difference over rows to capture changes
-                df["FPOGX"] = fpogx_diff
+                # Remove rows where the value in the FPOGY column is less than 0.3
+                #df = df[df['FPOGY'] >= 0.3].reset_index(drop=True)
 
-                fpogy = df["FPOGY"]
-                fpogy_diff = fpogy.diff().fillna(0)  # Take the difference over rows to capture changes
-                df["FPOGY"] = fpogy_diff
+                if("FPOGY" in FEATURES_NAME and "FPOGX" in FEATURES_NAME):
+                    fpogx = df["FPOGX"]
+                    fpogx_diff = fpogx.diff().fillna(0)  # Take the difference over rows to capture changes
+                    df["FPOGX"] = fpogx_diff
+
+                    fpogy = df["FPOGY"]
+                    fpogy_diff = fpogy.diff().fillna(0)  # Take the difference over rows to capture changes
+                    df["FPOGY"] = fpogy_diff
+
+
+                if ("LPS" in FEATURES_NAME and "RPS" in FEATURES_NAME):
+                    LPS = df["LPS"]
+                    LPS_diff = LPS.diff().fillna(0)  # Take the difference over rows to capture changes
+                    df["LPS-diff"] = LPS_diff
+
+                    RPS = df["RPS"]
+                    RPS_diff = RPS.diff().fillna(0)  # Take the difference over rows to capture changes
+                    df["RPS-diff"] = RPS_diff
 
                 # Split the DataFrame into chunks of defined sequence length
                 chunks = split_into_chunks(df, sequence_length)
@@ -108,7 +126,7 @@ def split_balance_class_data(valid_data, test_size=0.2):
     stacked_data = pd.DataFrame(columns=['User_ID', 'Label', 'Source_Question'])
 
     # Stack Questions
-    for q in range(1, 4):
+    for q in QUESTION:
         question = valid_data[[f'Question_{q}', 'User_ID']].copy()
         question.rename(columns={f'Question_{q}': 'Label'}, inplace=True)
         question['Source_Question'] = q
@@ -272,9 +290,18 @@ def data_generation(sequence_length):
     #print(X_train_balanced[0].shape)
     #print(len(y_train_balanced))
 
+    # The number of class between tester is already balanced, dont need to balance class within chunks
     X_test, y_test = create_X_y_from_testing_data(labeled_chunks, test_data)
 
-    scaler = RobustScaler()
+    robust_scaler = RobustScaler()
+    minmax_scaler = MinMaxScaler()
+
+    X_train_balanced, X_test = scaler_data(X_train_balanced, X_test, robust_scaler)
+    #X_train_balanced, X_test = scaler_data(X_train_balanced, X_test, minmax_scaler)
+
+    return X_train_balanced, y_train_balanced, X_test, y_test
+
+def scaler_data(X_train_balanced, X_test, scaler):
     # First, flatten the 3D data into 2D for scaling
     X_train_flattened = np.concatenate([chunk for chunk in X_train_balanced], axis=0)
     # Fit the scaler on the training data
@@ -283,9 +310,9 @@ def data_generation(sequence_length):
     X_train_balanced = scale_3d_data_list(X_train_balanced, scaler)
 
     for i in range(len(X_test)):
-        X_test[i] = scale_3d_data_list(X_test[i],scaler)
+        X_test[i] = scale_3d_data_list(X_test[i], scaler)
 
-    return X_train_balanced, y_train_balanced, X_test, y_test
+    return X_train_balanced, X_test
 
 #def main():
     #X_train, y_train, X_test, y_test = data_generation()
