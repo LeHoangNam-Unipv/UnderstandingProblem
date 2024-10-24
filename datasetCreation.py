@@ -12,9 +12,9 @@ TEST_SIZE = 0.2
 
 #MIN_NUMB_ROW = None
 #MIN_NUMB_ROW = 9300
-MIN_NUMB_ROW = 3000
+MIN_NUMB_ROW = 3000  # 150 samples per second
+#QUESTION = [1,2,3]
 QUESTION = [1,2,3]
-#QUESTION = [3]
 NUMB_QUESTION = len(QUESTION)
 
 #FEATURES_NAME = ["FPOGX", "FPOGY", "LPCX", "LPCY" ,"LPD", "LPS", "RPCX", "RPCY" ,"RPD", "RPS"]
@@ -47,13 +47,10 @@ def scale_3d_data_list(X_list, scaler):
     for X in X_list:
         # Get the shape of the current chunk
         num_samples, num_features = X.shape
-
         # Scale the features (keep the sequence dimension intact)
         X_scaled = scaler.transform(X)
-
         # Append the scaled chunk back to the list
         scaled_list.append(X_scaled)
-
     return scaled_list
 
 # Format: data_dict[(user_id, question_num)]
@@ -85,7 +82,7 @@ def load_user_data(data_folder, sequence_length):
                     fpogy_diff = fpogy.diff().fillna(0)  # Take the difference over rows to capture changes
                     df["FPOGY"] = fpogy_diff
 
-
+                # Extract the changes overtime of pupil s
                 if ("LPS" in FEATURES_NAME and "RPS" in FEATURES_NAME):
                     LPS = df["LPS"]
                     LPS_diff = LPS.diff().fillna(0)  # Take the difference over rows to capture changes
@@ -105,7 +102,8 @@ def load_user_data(data_folder, sequence_length):
 
 def split_into_chunks(df, sequence_length):
     # Split the DataFrame into chunks of the specified sequence length
-    return [df.iloc[i:i + sequence_length].reset_index(drop=True) for i in range(0, len(df) - sequence_length + 1, sequence_length)]
+    return [df.iloc[i:i + sequence_length].reset_index(drop=True) for i in range(0, len(df) - sequence_length + 1,
+                                                                                 sequence_length)]
 
 def balance_classes(data, label_column):
     """Balance classes in the given DataFrame."""
@@ -132,7 +130,6 @@ def split_balance_class_data(valid_data, test_size=0.2):
         question['Source_Question'] = q
         stacked_data = pd.concat([stacked_data, question])
 
-
     stacked_data['Label'] = stacked_data['Label'].astype(int)
 
     # Split users into training and testing sets
@@ -142,10 +139,10 @@ def split_balance_class_data(valid_data, test_size=0.2):
     balanced_test_data = balance_classes(test_data, 'Label')
 
     # Get test unique users
-    test_users = stacked_data['User_ID'].unique()
+    test_users = test_data['User_ID'].unique()
 
     # Remove test user in training data
-    train_data_removed_test_user = train_data[train_data['User_ID'].isin(test_users)]
+    train_data_removed_test_user = train_data[~train_data['User_ID'].isin(test_users)]
 
     # Ensure balance in the train set
     # Balance the test set
@@ -240,6 +237,9 @@ def create_X_y_from_testing_data(labeled_chunks, test_data):
 
     return X_test, y_test
 
+# In case of using all data for training, each tester might have different amount of chunks, so we need to balance
+# training data
+
 def balance_training_data(X_train, y_train):
     # Separate data by class
     class_0_indices = np.where(y_train == 0)[0]
@@ -280,15 +280,7 @@ def data_generation(sequence_length):
 
     X_train, y_train = create_X_y_from_training_data(labeled_chunks, train_data)
 
-    #print(len(X_train))
-    #print(X_train[0].shape)
-    #print(len(y_train))
-
     X_train_balanced, y_train_balanced = balance_training_data(X_train, y_train)
-
-    #print(len(X_train_balanced))
-    #print(X_train_balanced[0].shape)
-    #print(len(y_train_balanced))
 
     # The number of class between tester is already balanced, dont need to balance class within chunks
     X_test, y_test = create_X_y_from_testing_data(labeled_chunks, test_data)
@@ -296,6 +288,7 @@ def data_generation(sequence_length):
     robust_scaler = RobustScaler()
     minmax_scaler = MinMaxScaler()
 
+    # Use X_train to fit scaler, then transform X_train and X_test
     X_train_balanced, X_test = scaler_data(X_train_balanced, X_test, robust_scaler)
     #X_train_balanced, X_test = scaler_data(X_train_balanced, X_test, minmax_scaler)
 
