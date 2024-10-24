@@ -13,13 +13,14 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score
 
 from datasetCreation import data_generation
+#from datasetCreationWithSingleSlideforTesting import data_generation
 
 parent_directory = os.getcwd()
 
 NUMBER_OF_EPOCH = 200
 VALIDATION_SIZE = 0.2
 BATCH_SIZE = 64
-PATIENCE = 20  # Early stopping
+PATIENCE = 10  # Early stopping
 
 now = datetime.now()
 date_string = now.strftime("%d-%m-%Y-%H-%M-%S")
@@ -33,7 +34,7 @@ NUMBER_OF_FEATURES = 10
 def build_models():
     # Define the architectures and their hyperparameters
     archs = [
-        #(FCN, {}),
+        (FCN, {}),
         #(ResNet, {}),
         #(xresnet1d34, {}),  # NOT ok
         #(ResCNN, {}),
@@ -46,7 +47,7 @@ def build_models():
         #(LSTM_FCN, {}), # Note: Long training time
         #(LSTM_FCN, {'shuffle': False}),
         #(InceptionTime, {}),
-        (XceptionTime, {}),
+        #(XceptionTime, {}),
         #(OmniScaleCNN, {}), # Not useful
         #(mWDN, {'levels': 4})  # NOT ok
     ]
@@ -59,7 +60,7 @@ def return_predicted_label_and_majority(pred_labels):
     # Count the number of 0s
     count_0 = len(pred_labels) - count_1
     # Determine which value is higher and calculate the probability
-    if count_1 > count_0:
+    if count_1 >= count_0:
         higher_value = 1
         higher_count = count_1
     else:
@@ -83,7 +84,8 @@ def train_model(archs, dls, validation_data_X, validation_data_y):
 
         loss = CrossEntropyLossFlat()
         learn = Learner(dls, model, metrics=[Precision(), Recall(), accuracy], loss_func=loss, opt_func=Adam)
-        learn.fit(NUMBER_OF_EPOCH, cbs=[save_callback, early_stopping])
+        #learn.fit(NUMBER_OF_EPOCH, cbs=[save_callback, early_stopping])
+        learn.fit(NUMBER_OF_EPOCH, cbs=[early_stopping])
         #start = time.time()
         #learn.fit_one_cycle(NUMBER_OF_EPOCH, cbs=[save_callback, early_stopping], lr_max=1e-3)
 
@@ -146,7 +148,6 @@ def train_model(archs, dls, validation_data_X, validation_data_y):
 def implementation(sequence):
     X, y, validation_data_X, validation_data_y = data_generation(sequence)
 
-
     # Split the data into training and validation sets
     splits = get_splits(y, valid_size=VALIDATION_SIZE, shuffle=False, show_plot=False)
 
@@ -203,7 +204,7 @@ def main():
                 results["iteration"] = i+1
                 results["sequence_length"] = sequence
                 chunk_prediction["iteration"] = i+1
-                chunk_prediction["sequence_length"] = sequence
+                chunk_prediction["sequence_length"] = sequence/150
                 save_result_to_csv(f"{str(date_string)}.csv", results)
                 save_chunk_prediction_to_csv(f"{str(date_string)}.csv", chunk_prediction)
     except Exception as error:

@@ -135,18 +135,21 @@ def split_balance_class_data(valid_data, test_size=0.2):
     # Split users into training and testing sets
     train_data, test_data = train_test_split(stacked_data, stratify=stacked_data['Label'], test_size=test_size)
 
+    # After split training and testing set, the class is not balanced yet, so we need to do that
     # Balance the test set
-    balanced_test_data = balance_classes(test_data, 'Label')
+    #balanced_test_data = balance_classes(test_data, 'Label')
+    balanced_test_data = test_data
 
     # Get test unique users
-    test_users = test_data['User_ID'].unique()
+    test_users = balanced_test_data['User_ID'].unique()
 
     # Remove test user in training data
     train_data_removed_test_user = train_data[~train_data['User_ID'].isin(test_users)]
 
     # Ensure balance in the train set
-    # Balance the test set
-    balanced_train_data = balance_classes(train_data_removed_test_user, 'Label')
+    #balanced_train_data = balance_classes(train_data_removed_test_user, 'Label')
+
+    balanced_train_data = train_data_removed_test_user
 
     # Combine the training and testing data
     train_dataset = balanced_train_data.reset_index(drop=True)
@@ -280,7 +283,12 @@ def data_generation(sequence_length):
 
     X_train, y_train = create_X_y_from_training_data(labeled_chunks, train_data)
 
-    X_train_balanced, y_train_balanced = balance_training_data(X_train, y_train)
+    # If we use all data, we must balance the number of chunks in each class
+    if (MIN_NUMB_ROW == None):
+        X_train_balanced, y_train_balanced = balance_training_data(X_train, y_train)
+    else:
+        X_train_balanced = X_train
+        y_train_balanced = y_train
 
     # The number of class between tester is already balanced, dont need to balance class within chunks
     X_test, y_test = create_X_y_from_testing_data(labeled_chunks, test_data)
@@ -308,6 +316,6 @@ def scaler_data(X_train_balanced, X_test, scaler):
     return X_train_balanced, X_test
 
 #def main():
-    #X_train, y_train, X_test, y_test = data_generation()
+    #X_train, y_train, X_test, y_test = data_generation(1500)
 
 #main()

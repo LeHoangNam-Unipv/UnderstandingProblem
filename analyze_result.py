@@ -6,16 +6,18 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 NUMB_OF_ITERATION = 20
 
-NUMB_TESTER = 12
+NUMB_TESTER = 4
 SEQUENCE_LENGTH = [750,1500]
 TESTING_SEQUENCE = 3000
-#ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime"]
-ARCH = ["XceptionTime"]
+ARCH = ["FCN", "ResNet", "ResCNN", "LSTM", "InceptionTime", "XceptionTime"]
+#ARCH = ["XceptionTime"]
 
-filepath = r"C:\Users\lehoa\OneDrive\Desktop\22-10-2024-10-33-00.csv"
+filepath = r"G:\My Drive\PHD\Understanding Problem\Results\Tsai models\slide 3\features no fpogx y add pupul s diff\first 20s\all models\23-10-2024-10-52-44.csv"
 LABEL_THRESHOLD = 0.5
 analyzed_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(analysed).csv"
 accuracy_file = r"C:\Users\lehoa\OneDrive\Desktop\Tsai_model_chunk_prediction(accuracy).csv"
+
+# From the chunk prediction, analyze the data to see some statistic
 def analyze():
     df = pd.read_csv(filepath)
     df_result = pd.DataFrame(columns=['arch', 'test_user', 'iteration', 'chunk_duration','groundtruth_label',
@@ -26,14 +28,14 @@ def analyze():
 
                 for tester in range(NUMB_TESTER):
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
-                    min_numb_of_chunk = int(9300/TESTING_SEQUENCE)
+                    min_numb_of_chunk = int(TESTING_SEQUENCE/sequence)
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence)
-                        ]
-                        #].iloc[:min_numb_of_chunk]
+                        (df['sequence_length'] == sequence/150)
+                        #]
+                        ].iloc[:min_numb_of_chunk]
 
                     true_label = filtered_df['label_of_test_user'].iloc[0]
 
@@ -67,6 +69,7 @@ def analyze():
                     df_result = df_result._append(result_data, ignore_index = True)
     append_to_csv(analyzed_file,df_result)
 
+# From the chunk prediction file, calculate the label of the tester and then get the accuracy
 def get_average_accuracy():
     df = pd.read_csv(filepath)
     df_result = pd.DataFrame(columns=['arch', 'iteration', 'chunk_duration', 'tester_accuracy', 'chunk_accuracy',
@@ -79,15 +82,15 @@ def get_average_accuracy():
                 groundtruth_chunk_labels = []
                 predicted_chunk_labels = []
                 for tester in range(NUMB_TESTER):
-                    min_numb_of_chunk = int(9300 / TESTING_SEQUENCE)
+                    min_numb_of_chunk = int(TESTING_SEQUENCE/sequence)
                     # Filter the dataframe based on the specific values and chunk_prediction = 1
                     filtered_df = df[
                         (df['arch'] == arch) &
                         (df['test_user'] == tester) &
                         (df['iteration'] == i+1) &
-                        (df['sequence_length'] == sequence)
-                        ]
-                        #].iloc[:min_numb_of_chunk]
+                        (df['sequence_length'] == sequence/150)
+                        #]
+                        ].iloc[:min_numb_of_chunk]
 
                     groundtruth_label = filtered_df['label_of_test_user'].iloc[0]
 
